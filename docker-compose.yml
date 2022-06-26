@@ -5,6 +5,7 @@ services:
         build:
             context: ./docker/config/php
             dockerfile: dev.Dockerfile
+        #command: "/usr/bin/supervisord -c"
         volumes:
             - '.:/var/www/html'
             - ./docker/config/php/conf.d/custom.ini:/usr/local/etc/php/conf.d/custom.ini
@@ -23,6 +24,7 @@ services:
             default-network:
 
     mysql:
+        container_name: app_mysql
         image: 'mysql:8.0'
         ports:
             - '3307:3306'
