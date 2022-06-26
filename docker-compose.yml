@@ -1,0 +1,64 @@
+version: '3'
+services:
+    php:
+        container_name: app_php
+        build:
+            context: ./docker/config/php
+            dockerfile: dev.Dockerfile
+        volumes:
+            - '.:/var/www/html'
+            - ./docker/config/php/conf.d/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+        networks:
+            default-network:
+
+    nginx:
+        container_name: app_nginx
+        image: nginx:latest
+        ports:
+            - 8000:80
+        volumes:
+            - '.:/var/www/html'
+            - ./docker/config/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            default-network:
+
+    mysql:
+        image: 'mysql:8.0'
+        ports:
+            - '3307:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: 'rootpass'
+            MYSQL_DATABASE: 'laravel'
+            MYSQL_USER: 'laravel'
+            MYSQL_PASSWORD: '123456'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        volumes:
+            - 'mysql:/var/lib/mysql'
+        networks:
+            default-network:
+
+    redis:
+        container_name: app_redis
+        image: 'redis:latest'
+        ports:
+            - '6379:6379'
+        volumes:
+            - 'redis:/data'
+        networks:
+            - default-network
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            retries: 3
+            timeout: 5s
+
+
+networks:
+    default-network:
+
+volumes:
+    redis:
+    mysql:
+
+
+
+
