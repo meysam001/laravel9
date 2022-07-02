@@ -15,4 +15,4 @@ RUN printf '[PHP]\nmemory_limit=2G\n' > /usr/local/etc/php/conf.d/memory.ini
 
 WORKDIR /var/www/html
 
-CMD ["/usr/bin/supervisord"]
+#CMD ["/usr/bin/supervisord"]
