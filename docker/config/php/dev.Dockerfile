@@ -5,6 +5,8 @@ RUN rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install curl bcmath zip iconv xml pdo_mysql
 
+RUN pecl install -o -f redis &&  rm -rf /tmp/pear &&  docker-php-ext-enable redis
+
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
 RUN rm -rf composer-setup.php && composer config --global repos.packagist composer https://packagist.org
