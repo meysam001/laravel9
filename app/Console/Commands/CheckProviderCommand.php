@@ -36,59 +36,58 @@ class CheckProviderCommand extends Command
         // Connect to redis
         $redis = new \Redis();
         $redis->connect('redis', 6379);
+//        $adapter = new RedisAdapter($redis, 'my-product');
 
-        $adapter = new RedisAdapter($redis, 'my-product');
+        $circuit = \Ackintosh\Ganesha\Builder::withRateStrategy()
+            ->adapter(new \Ackintosh\Ganesha\Storage\Adapter\Redis($redis))
+            ->failureRateThreshold(50)
+            ->intervalToHalfOpen(10)
+            ->minimumRequests(20)
+            ->timeWindow(30)
+            ->build();
 
         $messages = Message::where(['read' => 0])->limit(100)->get();
 
-        $services = ['Kavenegar'];
-        $success = [0=>0];
+        $services = ['Kavenegar', 'Ghasedak', 'SmsIr'];
+        $success = [0=>0,1=>0,2=>0];
         $failure = [0=>0,1=>0,2=>0];
 
-        foreach($services as $index => $service) {
-            foreach($messages as $message) {
+        foreach($messages as $message) {
+            foreach($services as $index => $service) {
 
                 $successValue = $this->getRandomZeroOrOne();
 
                 // Set redis adapter for CB
-                $circuit = new CircuitBreaker($adapter, $service);
+//                $circuit = new CircuitBreaker($adapter, $service);
 
-                dump("id: $message->id , service: $service , value: $successValue ,failureCount: ".$circuit->getFailuresCounter());
+//                echo("id: $message->id , service: $service , value: $successValue \n");
 
-                // Configure settings for CB
-                $circuit->setSettings([
-                    'timeWindow' => 60, // Time for an open circuit (seconds)
-                    'failureRateThreshold' => 10, // Fail rate for open the circuit
-                    'intervalToHalfOpen' => 30,  // Half open time (seconds)
-                ]);
+
                 // Check circuit status for service
-//                dump("service: $service , isAvailable: ", $circuit->isAvailable());
-                if (! $circuit->isAvailable()) {
-                    dump('Circuit is not available! '.$circuit->getService().' '.
-                        $circuit->getFailuresCounter().' id:'.$message->id);
-                    continue 2;
+//                echo("service: $service , isAvailable: ", $circuit->isAvailable());
+                if (! $circuit->isAvailable($service)) {
+                    echo('Circuit is not available! '.$service.' id:'.$message->id)."\n";
+                    continue;
                 }
 
                 try {
                     $this->myService($message, $service, $successValue);
-                    $circuit->success();
+                    $circuit->success($service);
                     $success[$index] += 1;
-//                echo 'success!' . PHP_EOL;
+                    echo "success, id: $message->id, service: $service \n";
                 } catch (\RuntimeException $e) {
                     // If an error occurred, it must be recorded as failure.
 //                    echo 'service: '.$service.' '.$services[$service]."\n";
-                    $circuit->failure();
+                    $circuit->failure($service);
                     $failure[$index] += 1;
-//                echo 'fail!' . PHP_EOL;
+                    echo "failed, id: $message->id, service: $service \n";
                 }
+                break;
             }
+
         }
 
-        $this->info("\n".json_encode(array_combine($services, $success)).' count:'.$message->count);
-        foreach($services as $service) {
-            $circuit = new CircuitBreaker($adapter, $service);
-           dump('service: '.$service. 'failure: '.$circuit->getFailuresCounter());
-        }
+        $this->info("\n".json_encode(array_combine($services, $success)).' count:'.$messages->count());
 //        $this->info(json_encode(array_combine($services, $failure)).' count:'.$message->count);
 
 //        Log::info(json_encode($services));
@@ -97,12 +96,12 @@ class CheckProviderCommand extends Command
 
     private function myService(Message &$message, string $service, int $successValue)
     {
-
         $message->read = 1;
         $message->success = $successValue;
         $message->service = $service;
         $message->save();
-        if ( $message->success ===0 ) {
+
+        if ( $successValue ===0 ) {
             throw new \RuntimeException('Something got wrong!');
         }
     }

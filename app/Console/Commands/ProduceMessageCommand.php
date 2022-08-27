@@ -29,6 +29,8 @@ class ProduceMessageCommand extends Command
      */
     public function handle()
     {
+        Message::truncate();
+
         $limit = $this->argument('limit') ?? 100;
         $count = intval(Message::max('count'));
 
