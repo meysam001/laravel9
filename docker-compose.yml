@@ -10,7 +10,8 @@ services:
             - '.:/var/www/html'
             - ./docker/config/php/conf.d/custom.ini:/usr/local/etc/php/conf.d/custom.ini
         networks:
-            default-network:
+            - default-network
+            - shared
 
     nginx:
         container_name: app_nginx
@@ -39,26 +40,12 @@ services:
         networks:
             default-network:
 
-    redis:
-        container_name: app_redis
-        image: 'redis:latest'
-        ports:
-            - '6379:6379'
-        volumes:
-            - 'redis:/data'
-        networks:
-            - default-network
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            retries: 3
-            timeout: 5s
-
-
 networks:
     default-network:
-
+    shared:
+        external:
+            name: shared
 volumes:
-    redis:
     mysql:
 
 

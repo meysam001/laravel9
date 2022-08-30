@@ -1,0 +1,3 @@
+[submodule "notification-client"]
+	path = notification-client
+	url = git@git.snapp.ninja:meysam.mahmoudi/notification-client.git
